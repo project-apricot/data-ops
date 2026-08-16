@@ -1,0 +1,5 @@
+{
+  "title": "Data Operations",
+  "description": "SQL declared in XML and executed with Dapper: operations addressed by group and name, written per database engine, with transactions that span several of them.",
+  "pages": ["index", "definitions", "usage", "aspnetcore"]
+}

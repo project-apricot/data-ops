@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<DataOperations xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:noNamespaceSchemaLocation="../../../schemas/DataOps.xsd">
+
+    <DataConfiguration Compatibility="Sqlite" />
+
+    <!-- Shipped as a file rather than embedded, so this SQL can be edited without a rebuild. -->
+    <OperationGroup Name="Reports">
+
+        <SqlOperation Name="AuthorsAndCount">
+            <TextCommand ExpectedResult="MultipleTables">
+                SELECT id, full_name, born_in FROM authors ORDER BY id;
+                SELECT COUNT(*) FROM authors;
+            </TextCommand>
+        </SqlOperation>
+
+    </OperationGroup>
+
+</DataOperations>

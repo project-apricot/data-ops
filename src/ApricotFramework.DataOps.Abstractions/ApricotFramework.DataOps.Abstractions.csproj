@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Zero-dependency contracts for ApricotFramework.DataOps: the data operations entry point, the fluent query/scalar/non-query/multi-result executors, the transaction scope, the connection and operation registries, and the model an XML operations definition parses into. Reference this from a library that consumes a data store without pulling in an execution engine.</Description>
+    <PackageTags>dapper;sql;data-access;abstractions;micro-orm;repository</PackageTags>
+    <RootNamespace>ApricotFramework.DataOps</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Explicit version (e.g. 1.0.0).'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Dry run.'
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark pre-release.'
+        required: false
+        type: boolean
+        default: false
+      tag:
+        description: 'Use existing tag.'
+        required: false
+        type: string
+        default: ''
+
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  prepare:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag == '' }}
+    uses: project-apricot/shared-workflows/.github/workflows/release-prepare.yml@v1
+    permissions:
+      contents: write
+    with:
+      version: ${{ inputs.version }}
+      dry_run: ${{ inputs.dry_run }}
+      prerelease: ${{ inputs.prerelease }}
+
+  publish:
+    needs: [prepare]
+    if: >-
+      ${{ always()
+          && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
+          && !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || needs.prepare.outputs.tag }}
+
+      - uses: project-apricot/shared-workflows/actions/dotnet-publish@v1
+        with:
+          tag: ${{ github.event.release.tag_name || inputs.tag || needs.prepare.outputs.tag }}
+          nuget_user: ${{ secrets.NUGET_USER }}

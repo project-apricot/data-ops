@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>SQL operations declared in XML and executed with Dapper: operations are keyed by group and name, carry their own provider compatibility, timeout and transaction settings, and are called through a fluent router instead of being embedded in C#. Loads definitions from embedded resources, files or code, validated against a published XSD.</Description>
+    <PackageTags>dapper;sql;data-access;micro-orm;repository;xml</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ApricotFramework.DataOps.Abstractions/ApricotFramework.DataOps.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="../../schemas/DataOps.xsd" LogicalName="ApricotFramework.DataOps.DataOps.xsd" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../schemas/DataOps.xsd" Pack="true" PackagePath="" Visible="false" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<!-- The schema reference is for the editor only; the parser validates against its own embedded copy. -->
+<DataOperations xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:noNamespaceSchemaLocation="../../../schemas/DataOps.xsd">
+
+    <!-- Applies to every operation in this file unless a group or operation overrides it. -->
+    <DataConfiguration Timeout="PT30S" Compatibility="Sqlite" />
+
+    <OperationGroup Name="Authors">
+
+        <SqlOperation Name="Create">
+            <TextCommand ExpectedResult="RowCount">
+                INSERT INTO authors (full_name, born_in) VALUES (@FullName, @BornIn)
+            </TextCommand>
+        </SqlOperation>
+
+        <SqlOperation Name="All">
+            <TextCommand ExpectedResult="Table">
+                SELECT id, full_name, born_in FROM authors ORDER BY {if:byName{ full_name } else { id }}
+            </TextCommand>
+        </SqlOperation>
+
+        <SqlOperation Name="Count">
+            <TextCommand ExpectedResult="Scalar">
+                SELECT COUNT(*) FROM authors
+            </TextCommand>
+        </SqlOperation>
+
+    </OperationGroup>
+
+</DataOperations>

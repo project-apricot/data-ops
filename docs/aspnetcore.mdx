@@ -1,0 +1,111 @@
+---
+title: ASP.NET Core
+description: Declaring data sources in configuration, binding a provider to a driver, and contributing operations from a library.
+---
+
+# ASP.NET Core
+
+```csharp
+builder.Services.AddDataOperations(builder.Configuration);
+builder.Services.AddDataSourceConnection(SqlProvider.PostgreSql, cs => new NpgsqlConnection(cs));
+builder.Services.AddOperationsDefinitionSource<AuthorOperationsSource>();
+```
+
+## Configuration
+
+```json
+{
+  "DataOperations": {
+    "DefaultDataSource": "Main",
+    "MatchNamesWithUnderscores": true,
+    "DataSources": {
+      "Main":      { "Provider": "PostgreSql", "ConnectionString": "Host=localhost;Database=app" },
+      "Reporting": { "Provider": "PostgreSql", "ConnectionString": "Host=replica;Database=app" }
+    }
+  }
+}
+```
+
+`Connect()` uses `DefaultDataSource`; `Connect("Reporting")` names one. Data source names are
+matched case-insensitively.
+
+Declaring the same thing in code needs no configuration section:
+
+```csharp
+builder.Services.AddDataOperations(options =>
+{
+    options.DefaultDataSource = "Main";
+    options.DataSources["Main"] = new DataSourceOptions
+    {
+        Provider = SqlProvider.Sqlite,
+        ConnectionString = "Data Source=app.db"
+    };
+});
+```
+
+## Binding a provider to a driver
+
+The library does not depend on any database driver, so nothing decides what `PostgreSql` means until
+you say. A factory is how you say it, and it is the only place the driver appears:
+
+```csharp
+builder.Services.AddDataSourceConnection(SqlProvider.MySql, cs => new MySqlConnection(cs));
+builder.Services.AddDataSourceConnection<MyPooledSqlServerFactory>();      // or an IDbConnectionFactory
+```
+
+There is no provider package to install — the driver is your choice, and one line binds it:
+
+| Provider | Driver package | Registration |
+| --- | --- | --- |
+| `SqlServer` | `Microsoft.Data.SqlClient` | `AddDataSourceConnection(SqlProvider.SqlServer, cs => new SqlConnection(cs))` |
+| `MySql` | `MySqlConnector` | `AddDataSourceConnection(SqlProvider.MySql, cs => new MySqlConnection(cs))` |
+| `PostgreSql` | `Npgsql` | `AddDataSourceConnection(SqlProvider.PostgreSql, cs => new NpgsqlConnection(cs))` |
+| `Sqlite` | `Microsoft.Data.Sqlite` | `AddDataSourceConnection(SqlProvider.Sqlite, cs => new SqliteConnection(cs))` |
+
+Namespaces are `Microsoft.Data.SqlClient`, `MySqlConnector`, `Npgsql` and `Microsoft.Data.Sqlite`.
+Oracle's `MySql.Data` also exposes a `MySqlConnection` and works the same way, under a different
+namespace and a GPL-with-FOSS-exception licence.
+
+A factory can be bound to one data source instead of a whole provider, which is how two sources on
+the same engine use different drivers or different connection setup:
+
+```csharp
+builder.Services.AddDataSourceConnection("Reporting", SqlProvider.PostgreSql, cs => new NpgsqlConnection(cs));
+```
+
+Resolution runs name-keyed factory, then provider factory, then the data source's
+`ProviderInvariantName` through `DbProviderFactories`. That last route exists for hosts that already
+call `DbProviderFactories.RegisterFactory`; it depends on process-wide state, so prefer a factory.
+
+If a data source has neither, connecting to it fails with a message naming both ways to fix it.
+
+## Contributing operations from a library
+
+Registration is additive, so a library ships its own operations and its own repository without
+owning the host's composition root:
+
+```csharp
+public static IServiceCollection AddAuthorStore(this IServiceCollection services)
+{
+    services.AddOperationsDefinitionSource<AuthorOperationsSource>();
+    services.AddSingleton<IAuthorRepository, AuthorRepository>();
+    return services;
+}
+```
+
+The host still decides the data sources and the drivers. The library's own project only needs
+`ApricotFramework.DataOps` — or `ApricotFramework.DataOps.Abstractions`, if it consumes
+`IDataOperations` without shipping definition files of its own.
+
+## Replacing a registry
+
+`AddDataOperations` registers its services with `TryAdd`, so a replacement registered beforehand
+wins:
+
+```csharp
+builder.Services.AddConnectionRegistry<TenantConnectionRegistry>();      // before AddDataOperations
+builder.Services.AddDataOperations(builder.Configuration);
+```
+
+Everything resolves as a singleton, including `IDataOperations`. The operation registry is built
+once, the first time it is resolved, by reading every registered definition source.

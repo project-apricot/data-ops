@@ -1,0 +1,107 @@
+---
+title: Defining operations
+description: The XML format, the settings each level carries, provider compatibility, and conditional SQL fragments.
+---
+
+# Defining operations
+
+A definition file has optional file-wide settings and any number of groups:
+
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<DataOperations xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:noNamespaceSchemaLocation="DataOps.xsd">
+
+  <DataConfiguration Timeout="PT30S" Compatibility="Sqlite" AutoTransaction="ReadCommitted" />
+
+  <OperationGroup Name="Authors">
+    <SqlOperation Name="All">
+      <TextCommand ExpectedResult="Table">SELECT id, full_name FROM authors</TextCommand>
+    </SqlOperation>
+    <SqlOperation Name="Refresh" Timeout="PT5M">
+      <StoredProcedure Name="sp_refresh_authors" ExpectedResult="RowCount" />
+    </SqlOperation>
+  </OperationGroup>
+
+</DataOperations>
+```
+
+The schema is published as `DataOps.xsd` and every file is validated against it unless a source is
+constructed with validation off. Validation reports every problem in the file at once.
+
+`xsi:noNamespaceSchemaLocation` is a relative path from the file to a copy of the schema, and it is
+read by your editor only — the parser always validates against the copy embedded in the package, so
+the attribute can point anywhere convenient or be left off entirely.
+
+`DataOps.xsd` ships at the root of `ApricotFramework.DataOps`, which restore extracts to disk, so
+getting a copy beside your operations files is one command:
+
+```bash
+cp ~/.nuget/packages/apricotframework.dataops/<version>/DataOps.xsd Operations/
+```
+
+> **Note.** The schema is not injected into your project or your build output. Nothing reads it at
+> runtime, so copying it is only ever for the editor, and a stale copy cannot make a valid file fail
+> or an invalid one pass.
+
+## Settings and where they come from
+
+`Timeout`, `Compatibility` and `AutoTransaction` may appear on `DataConfiguration`, on
+`OperationGroup` and on `SqlOperation`. The innermost one wins; anything unset is inherited.
+
+| Attribute | Values | Unset means |
+| --- | --- | --- |
+| `Compatibility` | whitespace-separated list of `SqlServer`, `MySql`, `PostgreSql`, `Sqlite`, plus `Any` and `None` | `Any` |
+| `Timeout` | an `xs:duration` such as `PT30S`; a `00:00:30` TimeSpan is also accepted | the provider's own default |
+| `AutoTransaction` | `No`, `ReadUncommitted`, `ReadCommitted`, `RepeatableRead`, `Serializable` | no transaction |
+| `ExpectedResult` | `Table`, `MultipleTables`, `Scalar`, `RowCount`, `Unknown` | `Unknown` |
+
+`AutoTransaction="No"` is not the same as leaving it out: it stops the inheritance, so an operation
+inside a transactional group can opt out of one.
+
+`ExpectedResult` decides which executor may run the operation — declaring `Scalar` and calling
+`Query` fails immediately rather than at the database. `Unknown` permits any of them, and the caller
+carries the risk.
+
+> **Note.** Provider names are read case-insensitively, so `MySQL` from an older file still parses.
+> The spellings above are the ones the schema accepts.
+
+## Conditional fragments
+
+An operation can switch between two pieces of SQL its author wrote:
+
+```xml
+<TextCommand ExpectedResult="Table">
+  SELECT id, full_name FROM authors ORDER BY {if:byName{ full_name } else { id }}
+</TextCommand>
+```
+
+```csharp
+dataOps.Connect().Query("Authors", "All").WithBinding("byName", true)
+```
+
+A `false` or absent binding takes the else branch; any other non-null value takes the if branch.
+
+> **Warning.** A binding chooses between two authored fragments and is never substituted into the
+> command, so it cannot inject SQL. Values still belong in parameters — `@FullName`, passed to
+> `ExecuteAsync` — never in a fragment.
+
+## Where files live
+
+| Source | Reads from | Use for |
+| --- | --- | --- |
+| `EmbeddedXmlOperationsDefinitionSource` | embedded resources of an assembly | operations a library owns and ships |
+| `DirectXmlOperationsDefinitionSource` | files under a directory | SQL that should be editable without a rebuild |
+| `StaticOperationsDefinitionSource` | definitions built in code | tests, and generating operations |
+
+Subclass one of them so the source can be registered by type:
+
+```csharp
+public class AuthorOperationsSource : EmbeddedXmlOperationsDefinitionSource
+{
+    public AuthorOperationsSource()
+        : base(Assembly.GetExecutingAssembly(), new EmbeddedFinderOptions { Directories = { "Operations" } })
+    {
+    }
+}
+```

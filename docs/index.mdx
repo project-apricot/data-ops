@@ -1,0 +1,59 @@
+---
+title: Data Operations
+description: Why SQL is declared outside C#, what the three packages contain, and how an operation is addressed.
+---
+
+# Data Operations
+
+SQL embedded in C# is hard to review as SQL, hard to reuse between services, and hard to vary per
+database engine without a conditional in the middle of a method. This library moves it out: queries
+live in XML files with a published schema, are addressed by group and name, and carry their own
+timeout, transaction and engine compatibility.
+
+The calling code says *which operation*, not *what SQL* and not *for which engine*:
+
+```csharp
+var authors = await dataOps.Connect().Query("Authors", "All").ExecuteAsync<Author>();
+```
+
+## The three packages
+
+| Package | Contains | Depends on |
+| --- | --- | --- |
+| `ApricotFramework.DataOps.Abstractions` | `IDataOperations`, the router, the five executors, the transaction scope, the registries, the definition model | nothing |
+| `ApricotFramework.DataOps` | the XSD and parser, the embedded/file/static definition sources, the registries, the Dapper execution engine | Abstractions, Dapper |
+| `ApricotFramework.DataOps.AspNetCore` | data sources from configuration, connection factories in DI, the registration extensions | the core and the framework |
+
+A library that only *calls* a data store references Abstractions and stays free of Dapper. A library
+that also *ships* its own `.xml` operations references the core, because that is where the sources
+and the parser live.
+
+## Addressing an operation
+
+An operation is a `group/name` pair, resolved against the provider of the connection it runs on. The
+same key can carry a different statement per engine:
+
+```xml
+<OperationGroup Name="Authors" Compatibility="PostgreSql">
+  <SqlOperation Name="Upsert">
+    <TextCommand ExpectedResult="RowCount">
+      INSERT INTO authors (id, full_name) VALUES (@Id, @FullName)
+      ON CONFLICT (id) DO UPDATE SET full_name = excluded.full_name
+    </TextCommand>
+  </SqlOperation>
+</OperationGroup>
+```
+
+A MySQL connection asking for `Authors/Upsert` does not get this one. If a MySQL file declares the
+same key, it gets that instead; if nothing does, the call fails with a message naming the key and
+the provider rather than sending invalid SQL to the server.
+
+## Where definitions come from
+
+Sources are additive and every registered one is read once, when the registry is first built. A
+library contributes operations embedded in its own assembly; the host contributes its own; both end
+up in one registry. Two sources defining the same key for the same provider is an error at startup,
+not a silent last-one-wins.
+
+See [Defining operations](definitions) for the file format, [Usage](usage) for the executors and
+transactions, and [ASP.NET Core](aspnetcore) for configuration and connection factories.

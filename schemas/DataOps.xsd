@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="DataOperations" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- Root element for data operations definitions -->
+  <xs:element name="DataOperations">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="DataConfiguration" minOccurs="0" />
+        <xs:element ref="OperationGroup" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- File-wide defaults, overridden by a group and then by an operation -->
+  <xs:element name="DataConfiguration">
+    <xs:complexType>
+      <xs:attributeGroup ref="Provider" />
+      <xs:attributeGroup ref="Transactions" />
+    </xs:complexType>
+  </xs:element>
+
+  <!-- A named group of operations -->
+  <xs:element name="OperationGroup">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="SqlOperation" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+      <xs:attribute name="Name" type="xs:string" use="required" />
+      <xs:attributeGroup ref="Provider" />
+      <xs:attributeGroup ref="Transactions" />
+    </xs:complexType>
+  </xs:element>
+
+  <!-- A command naming a stored procedure -->
+  <xs:element name="StoredProcedure">
+    <xs:complexType>
+      <xs:attributeGroup ref="BaseCommand" />
+      <xs:attribute name="Name" type="xs:string" use="required" />
+    </xs:complexType>
+  </xs:element>
+
+  <!-- A command carrying its SQL as element text -->
+  <xs:element name="TextCommand">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:normalizedString">
+          <xs:attributeGroup ref="BaseCommand" />
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- A single operation, addressed as group/name -->
+  <xs:element name="SqlOperation">
+    <xs:complexType>
+      <xs:choice>
+        <xs:element ref="StoredProcedure" />
+        <xs:element ref="TextCommand" />
+      </xs:choice>
+      <xs:attribute name="Name" type="xs:string" use="required" />
+      <xs:attributeGroup ref="Provider" />
+      <xs:attributeGroup ref="Transactions" />
+    </xs:complexType>
+  </xs:element>
+
+  <xs:attributeGroup name="Provider">
+    <xs:attribute name="Compatibility" type="CompatibilityProviders" />
+    <xs:attribute name="Timeout" type="xs:duration" />
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="BaseCommand">
+    <xs:attribute name="ExpectedResult" type="ExpectedResultOptions" default="Unknown" />
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="Transactions">
+    <xs:attribute name="AutoTransaction" type="AutoTransactionMode" />
+  </xs:attributeGroup>
+
+  <!-- Which executor the operation may be called through -->
+  <xs:simpleType name="ExpectedResultOptions" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Unknown" />
+      <xs:enumeration value="Table" />
+      <xs:enumeration value="MultipleTables" />
+      <xs:enumeration value="Scalar" />
+      <xs:enumeration value="RowCount" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Isolation level of a transaction opened around a single operation; No opens none -->
+  <xs:simpleType name="AutoTransactionMode" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="No" />
+      <xs:enumeration value="RepeatableRead" />
+      <xs:enumeration value="ReadUncommitted" />
+      <xs:enumeration value="ReadCommitted" />
+      <xs:enumeration value="Serializable" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Whitespace-separated list of providers the operation is written for -->
+  <xs:simpleType name="CompatibilityProviders" final="list">
+    <xs:list>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="SqlServer" />
+          <xs:enumeration value="MySql" />
+          <xs:enumeration value="PostgreSql" />
+          <xs:enumeration value="Sqlite" />
+          <xs:enumeration value="Any" />
+          <xs:enumeration value="None" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:list>
+  </xs:simpleType>
+
+</xs:schema>

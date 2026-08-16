@@ -1,0 +1,99 @@
+---
+title: Usage
+description: The five executors, per-call settings, transactions across several operations, and connection ownership.
+---
+
+# Usage
+
+`IDataOperations.Connect()` returns a router; the router resolves a key into the executor the
+operation's declared result allows.
+
+| Executor | Declared result | Returns |
+| --- | --- | --- |
+| `Query` | `Table` | every row |
+| `QueryFirst` | `Table` | one row, per `QueryFirstMode` |
+| `NonQuery` | `RowCount` | rows affected |
+| `Scalar` | `Scalar` | one value |
+| `MultiQuery` | `MultipleTables` | whatever the reader callback produces |
+
+```csharp
+var all      = await dataOps.Connect().Query("Authors", "All").ExecuteAsync<Author>();
+var one      = await dataOps.Connect().QueryFirst("Authors", "ById").ExecuteAsync<Author>(new { Id = 7 });
+var affected = await dataOps.Connect().NonQuery("Authors", "Create").ExecuteAsync(author);
+var count    = await dataOps.Connect().Scalar("Authors", "Count").ExecuteAsync<long>();
+```
+
+`QueryFirst` defaults to `FirstOrDefault`. `First` throws when there are no rows, `SingleRow` throws
+unless there is exactly one, and `SingleRowOrDefault` allows none but not several.
+
+`MultiQuery` reads its sets inside a callback, because the reader is closed when the callback
+returns:
+
+```csharp
+var (authors, total) = await dataOps.Connect().MultiQuery("Reports", "AuthorsAndCount")
+    .ExecuteAsync(async reader =>
+    {
+        var rows = await reader.ReadAsync<Author>();
+        return (rows.ToList(), await reader.ReadFirstOrDefaultAsync<long>());
+    });
+```
+
+## Per-call settings
+
+`WithTimeout`, `WithBuffering`, `WithBinding` and `WithTransaction` override what the definition
+declared, and chain:
+
+```csharp
+await dataOps.Connect().Query("Reports", "Everything")
+    .WithTimeout(TimeSpan.FromMinutes(10))
+    .WithBuffering(false)
+    .ExecuteAsync<Row>();
+```
+
+## Transactions
+
+An operation declaring `AutoTransaction` opens and commits its own, around that one call. For
+several operations in one transaction, open a scope:
+
+```csharp
+await using var scope = await dataOps.BeginAsync(AutoTransaction.Serializable);
+
+await scope.Router.NonQuery("Authors", "Create").ExecuteAsync(author);
+await scope.Router.NonQuery("Audit", "Append").ExecuteAsync(entry);
+
+await scope.CommitAsync();
+```
+
+Every executor the scope hands out is enlisted in its transaction and will not commit it, whatever
+the operation's own definition declares. Leaving the scope without committing rolls back, so an
+exception on the second call undoes the first.
+
+To run inside a transaction you opened yourself, pass the connection instead:
+
+```csharp
+var router = dataOps.Connect(connection, SqlProvider.PostgreSql);
+await router.NonQuery("Authors", "Create").WithTransaction(transaction).ExecuteAsync(author);
+```
+
+## Who closes the connection
+
+| How you connected | Who owns the connection |
+| --- | --- |
+| `Connect()` / `Connect(dataSource)` | the router; disposing it disposes the connection |
+| `Connect(connection, provider)` | you; the router never closes or disposes it |
+| `ConnectDirect()` | you; dispose the reference |
+| `BeginAsync(...)` | the scope; disposing it rolls back and disposes both |
+
+A router from `Connect()` opens and closes the connection around each operation, so the one-line
+form is safe to leave undisposed — pooling returns the connection either way. Take a `using` on the
+router when you want it to hold the connection across several calls.
+
+## Column mapping
+
+Column matching ignores underscores by default, so `full_name` fills a `FullName` property. This is
+Dapper's process-wide setting: it also affects queries the host runs through Dapper directly, and it
+can be turned off with `DataOperations:MatchNamesWithUnderscores`.
+
+> **Warning.** Underscore matching applies when Dapper *sets properties*. It does not apply to
+> constructor parameters, so a positional `record Author(long Id, string FullName)` will not
+> materialize from a `full_name` column. Use settable properties.

@@ -1,0 +1,7 @@
+{
+  "title": "Data Operations",
+  "description": "The XML schema every operations definition file is validated against: groups, commands, provider compatibility, timeouts and transaction modes.",
+  "files": [
+    "DataOps.xsd"
+  ]
+}
