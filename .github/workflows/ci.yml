@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: project-apricot/shared-workflows/.github/workflows/dotnet-lib-ci.yml@v1
+    with:
+      dotnet_versions: '10.0.x'

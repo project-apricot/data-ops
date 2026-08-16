@@ -1,0 +1,3 @@
+[*.cs]
+# Test names are Method_Scenario_ExpectedResult, which CA1707 rejects.
+dotnet_diagnostic.CA1707.severity = none

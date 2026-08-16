@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ApricotFramework.DataOps.Abstractions/ApricotFramework.DataOps.Abstractions.csproj" />
+    <Project Path="src/ApricotFramework.DataOps/ApricotFramework.DataOps.csproj" />
+    <Project Path="src/ApricotFramework.DataOps.AspNetCore/ApricotFramework.DataOps.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <File Path="tests\.editorconfig" />
+    <Project Path="tests/ApricotFramework.DataOps.Tests/ApricotFramework.DataOps.Tests.csproj" />
+    <Project Path="tests/ApricotFramework.DataOps.AspNetCore.Tests/ApricotFramework.DataOps.AspNetCore.Tests.csproj" />
+  </Folder>
+  <Folder Name="/examples/">
+    <Project Path="examples/ApricotFramework.DataOps.Examples.Web/ApricotFramework.DataOps.Examples.Web.csproj" />
+  </Folder>
+</Solution>

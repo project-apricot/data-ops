@@ -1,0 +1,13 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  title:
+    uses: project-apricot/shared-workflows/.github/workflows/pr-conventional-title.yml@v1

@@ -1,0 +1,15 @@
+name: Preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  preview:
+    uses: project-apricot/shared-workflows/.github/workflows/dotnet-lib-preview.yml@v1
+    permissions:
+      contents: read
+      packages: write

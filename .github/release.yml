@@ -1,0 +1,35 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - dependencies
+  categories:
+    - title: Breaking changes
+      labels:
+        - breaking-change
+
+    - title: Features
+      labels:
+        - enhancement
+        - feature
+
+    - title: Fixes
+      labels:
+        - bug
+        - fix
+
+    - title: Documentation
+      labels:
+        - documentation
+
+    - title: Maintenance
+      labels:
+        - chore
+        - ci
+        - refactor
+        - test
+
+    # Anything unlabelled still appears, so nothing is silently dropped.
+    - title: Other changes
+      labels:
+        - "*"
