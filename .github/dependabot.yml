@@ -17,6 +17,7 @@ updates:
           - "xunit*"
           - "Microsoft.NET.Test.Sdk"
           - "coverlet.*"
+          - "Microsoft.Testing.*"
           - "Microsoft.Data.Sqlite*"
 
   - package-ecosystem: github-actions
