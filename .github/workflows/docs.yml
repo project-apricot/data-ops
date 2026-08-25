@@ -1,0 +1,30 @@
+name: Docs
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ref to take the docs from. Empty = the branch this run was started on.'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Report the diff without opening a pull request.'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    uses: project-apricot/shared-workflows/.github/workflows/docs-release.yml@v1
+    permissions:
+      contents: read
+    with:
+      ref: ${{ inputs.ref }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets:
+      docs_app_client_id: ${{ secrets.DOCS_APP_CLIENT_ID }}
+      docs_app_private_key: ${{ secrets.DOCS_APP_PRIVATE_KEY }}

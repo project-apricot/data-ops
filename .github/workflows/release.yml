@@ -62,3 +62,16 @@ jobs:
         with:
           tag: ${{ github.event.release.tag_name || inputs.tag || needs.prepare.outputs.tag }}
           nuget_user: ${{ secrets.NUGET_USER }}
+
+  docs:
+    needs: [publish]
+    if: ${{ success() }}
+    uses: project-apricot/shared-workflows/.github/workflows/docs-release.yml@v1
+    permissions:
+      contents: read
+    with:
+      ref: ${{ github.event.release.tag_name || inputs.tag || needs.prepare.outputs.tag }}
+      version: ${{ github.event.release.tag_name || inputs.tag || needs.prepare.outputs.tag }}
+    secrets:
+      docs_app_client_id: ${{ secrets.DOCS_APP_CLIENT_ID }}
+      docs_app_private_key: ${{ secrets.DOCS_APP_PRIVATE_KEY }}
