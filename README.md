@@ -63,4 +63,4 @@ statement per engine.
 > `record` will not materialize from underscored columns. Turn it off with
 > `DataOperations:MatchNamesWithUnderscores`.
 
-Full documentation at [projectapricot.dev](https://projectapricot.dev).
+Full documentation at [projectapricot.dev/docs/data-ops](https://projectapricot.dev/docs/data-ops).
