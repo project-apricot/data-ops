@@ -10,15 +10,12 @@ updates:
       - dependencies
     commit-message:
       prefix: "chore(deps)"
-    # Grouped so that a solo PR means a dependency that ships. Dapper is the only one.
-    groups:
-      test-stack:
-        patterns:
-          - "xunit*"
-          - "Microsoft.NET.Test.Sdk"
-          - "coverlet.*"
-          - "Microsoft.Testing.*"
-          - "Microsoft.Data.Sqlite*"
+    ignore:
+      - dependency-name: "xunit*"
+      - dependency-name: "Microsoft.NET.Test.Sdk"
+      - dependency-name: "coverlet.*"
+      - dependency-name: "Microsoft.Testing.*"
+      - dependency-name: "Microsoft.Data.Sqlite"
 
   - package-ecosystem: github-actions
     directory: "/"
